@@ -1,0 +1,5 @@
+bin/
+.vscode/
+.task/
+.cache/
+compile_commands.json

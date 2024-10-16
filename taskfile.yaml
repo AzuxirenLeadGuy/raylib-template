@@ -1,0 +1,67 @@
+version: 3
+
+vars:
+  # RAYLIB_DIR: Set path to raylib files here
+  RAYLIB_LIN_DIR: '{{.RAYLIB_DIR}}/raylib-5.0_linux_amd64'
+  RAYLIB_WEB_DIR: '{{.RAYLIB_DIR}}/raylib-5.0_webassembly'
+  RAYLIB_W64_DIR: '{{.RAYLIB_DIR}}/raylib-5.0_win64_mingw-w64'
+
+  SRC: ./src/*.c
+  LINUX_EXE: ./bin/linux/program.out
+  WIN64_EXE: ./bin/w64/program.exe
+
+tasks:
+  build-linux:
+    vars:
+      link_flags: -lraylib -lGL -lm -lpthread -ldl -lrt -lX11 
+      i_flag: -I{{.RAYLIB_LIN_DIR}}/include
+      l_flag: -L{{.RAYLIB_LIN_DIR}}/lib
+
+    cmds:
+      - mkdir -p ./bin
+      - mkdir -p ./bin/linux
+      - clang -g -MJ ./cc.json -o {{.LINUX_EXE}} {{.SRC}} {{.link_flags}} {{.i_flag}} {{.l_flag}}
+      - (echo "["; cat ./cc.json; echo "]") > compile_commands.json
+      - rm ./cc.json
+      - cp {{.RAYLIB_LIN_DIR}}/lib/* ./bin/linux/
+    requires:
+      vars:
+        - RAYLIB_DIR
+    generates:
+      - '{{.LINUX_EXE}}'
+    sources:
+      - SRC
+
+  run-linux:
+    cmds:
+      - task: build-linux
+      - LD_PRELOAD={{.RAYLIB_LIN_DIR}}/lib/libraylib.so.500 {{.LINUX_EXE}}
+    requires:
+      vars:
+        - RAYLIB_DIR
+
+
+  build-win64:
+    vars:
+      i_flag: -I{{.RAYLIB_W64_DIR}}/include
+    cmds:
+      - mkdir -p ./bin
+      - mkdir -p ./bin/w64
+      - x86_64-w64-mingw32-gcc -g -o {{.WIN64_EXE}} {{.SRC}} {{.RAYLIB_W64_DIR}}/lib/raylib.dll {{.i_flag}}
+      - cp {{.RAYLIB_W64_DIR}}/lib/* ./bin/w64/
+    requires:
+      vars:
+        - RAYLIB_DIR
+    generates:
+      - '{{.WIN64_EXE}}'
+    sources:
+      - SRC
+
+  run-win64:
+    cmds:
+      - task: build-win64
+      - '{{.WIN64_EXE}}'
+    requires:
+      vars:
+        - RAYLIB_DIR
+
